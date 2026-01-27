@@ -1,160 +1,184 @@
 "use client";
+
 import { useWalletConnection } from "@solana/react-hooks";
-import { VaultCard } from "./components/vault-card";
+import { useState } from "react";
+import { ScannerInput } from "./components/scanner-input";
+import { ViralGauge } from "./components/viral-gauge";
+import { StampButton } from "./components/stamp-button";
+import { ResultCard } from "./components/result-card";
+import { toast } from "sonner";
+
+// Temporary types until API integration
+interface AnalysisResult {
+  score: number;
+  reasoning: string;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH";
+  tags: string[];
+}
 
 export default function Home() {
-  const { connectors, connect, disconnect, wallet, status } =
+  const { wallet, connect, disconnect, status, connectors } =
     useWalletConnection();
 
-  const address = wallet?.account.address.toString();
+  // State
+  const [url, setUrl] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [isStamping, setIsStamping] = useState(false);
+  const [txSignature, setTxSignature] = useState<string | null>(null);
+
+  // Mock Analysis Handler (Will be replaced by API call in Step 2.2)
+  const handleAnalyze = async (inputUrl: string) => {
+    setUrl(inputUrl);
+    setIsAnalyzing(true);
+    setAnalysis(null);
+    setTxSignature(null);
+
+    try {
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Mock result
+      const mockResult: AnalysisResult = {
+        score: 88,
+        reasoning: "马斯克刚点赞了这条。流动性已锁。要起飞了。(Mock数据)",
+        riskLevel: "MEDIUM",
+        tags: ["名人互动", "高交易量", "Meme"],
+      };
+
+      setAnalysis(mockResult);
+      toast.success("分析完成！");
+    } catch (error) {
+      console.error(error);
+      toast.error("分析失败，请重试");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Mock Stamp Handler (Will be replaced by Solana integration in Step 2.3)
+  const handleStamp = async () => {
+    if (!wallet || !analysis) return;
+
+    setIsStamping(true);
+    try {
+      // Simulate Transaction delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Mock Signature
+      const mockSig = "5KtPk......mock_signature......";
+      setTxSignature(mockSig);
+      toast.success("盖戳成功！已上链存证");
+    } catch (error) {
+      console.error(error);
+      toast.error("交易失败");
+    } finally {
+      setIsStamping(false);
+    }
+  };
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-bg1 text-foreground">
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-4xl flex-col gap-10 border-x border-border-low px-6 py-16">
-        <header className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.18em] text-muted">
-            Solana starter kit
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Ship a Solana dapp fast
-          </h1>
-          <p className="max-w-3xl text-base leading-relaxed text-muted">
-            Drop in <code className="font-mono">@solana/react-hooks</code>, wrap
-            your tree once, and you get wallet connect/disconnect plus
-            ready-to-use hooks for balances and transactions—no manual RPC
-            wiring.
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-foreground">
-            <li className="flex gap-2">
-              <span
-                className="mt-1.5 h-2 w-2 rounded-full bg-foreground/60"
-                aria-hidden
-              />
-              <div>
-                <a
-                  className="font-medium underline underline-offset-2"
-                  href="https://solana.com/docs"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Solana docs
-                </a>{" "}
-                — core concepts, RPC, programs, and client patterns.
+    <div className="relative min-h-screen overflow-x-hidden">
+      {/* Background gradients are handled in globals.css via body */}
+
+      <main className="relative z-10 container mx-auto px-4 py-8 min-h-screen flex flex-col items-center">
+        {/* Header */}
+        <header className="w-full max-w-5xl flex justify-between items-center mb-16">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-primary to-secondary animate-pulse" />
+            <span className="text-xl font-heading font-bold tracking-tight text-foreground">
+              TrendScout AI
+            </span>
+          </div>
+
+          {/* Wallet Connect Button */}
+          <div>
+            {status === "connected" ? (
+              <button
+                onClick={() => disconnect()}
+                className="px-4 py-2 rounded-lg border border-border bg-card/50 hover:bg-card text-sm font-body transition-all"
+              >
+                {wallet?.account.address.toString().slice(0, 4)}...
+                {wallet?.account.address.toString().slice(-4)}
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                {connectors.map((connector) => (
+                  <button
+                    key={connector.id}
+                    onClick={() => connect(connector.id)}
+                    className="px-4 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-sm font-heading font-semibold transition-all"
+                  >
+                    Connect {connector.name}
+                  </button>
+                ))}
               </div>
-            </li>
-            <li className="flex gap-2">
-              <span
-                className="mt-1.5 h-2 w-2 rounded-full bg-foreground/60"
-                aria-hidden
-              />
-              <div>
-                <a
-                  className="font-medium underline underline-offset-2"
-                  href="https://www.anchor-lang.com/docs/introduction"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Anchor docs
-                </a>{" "}
-                — build and test programs with IDL, macros, and type-safe
-                clients.
-              </div>
-            </li>
-            <li className="flex gap-2">
-              <span
-                className="mt-1.5 h-2 w-2 rounded-full bg-foreground/60"
-                aria-hidden
-              />
-              <div>
-                <a
-                  className="font-medium underline underline-offset-2"
-                  href="https://faucet.solana.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Solana faucet (devnet)
-                </a>{" "}
-                — grab free devnet SOL to try transfers and transactions.
-              </div>
-            </li>
-            <li className="flex gap-2">
-              <span
-                className="mt-1.5 h-2 w-2 rounded-full bg-foreground/60"
-                aria-hidden
-              />
-              <div>
-                <a
-                  className="font-medium underline underline-offset-2"
-                  href="https://github.com/solana-foundation/framework-kit/tree/main/packages/react-hooks"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  @solana/react-hooks README
-                </a>{" "}
-                — how this starter wires the client, connectors, and hooks.
-              </div>
-            </li>
-          </ul>
+            )}
+          </div>
         </header>
 
-        <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-6 shadow-[0_20px_80px_-50px_rgba(0,0,0,0.35)]">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <p className="text-lg font-semibold">Wallet connection</p>
-              <p className="text-sm text-muted">
-                Pick any discovered connector and manage connect / disconnect in
-                one spot.
-              </p>
-            </div>
-            <span className="rounded-full bg-cream px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground/80">
-              {status === "connected" ? "Connected" : "Not connected"}
-            </span>
+        {/* Hero Section */}
+        <div className="w-full max-w-4xl flex flex-col items-center gap-12 text-center">
+          <div className="space-y-4">
+            <h1 className="text-4xl md:text-6xl font-heading font-bold tracking-tighter text-transparent bg-clip-text bg-linear-to-r from-foreground via-primary-light to-secondary">
+              发现下一个 100x Alpha
+            </h1>
+            <p className="text-lg md:text-xl text-muted font-body max-w-2xl mx-auto">
+              利用 AI 深度分析加密趋势，将你的早期发现永久盖戳上链。
+              <br />
+              Don&apos;t trust, verify & stamp.
+            </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {connectors.map((connector) => (
-              <button
-                key={connector.id}
-                onClick={() => connect(connector.id)}
-                disabled={status === "connecting"}
-                className="group flex items-center justify-between rounded-xl border border-border-low bg-card px-4 py-3 text-left text-sm font-medium transition hover:-translate-y-0.5 hover:shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span className="flex flex-col">
-                  <span className="text-base">{connector.name}</span>
-                  <span className="text-xs text-muted">
-                    {status === "connecting"
-                      ? "Connecting…"
-                      : status === "connected" &&
-                          wallet?.connector.id === connector.id
-                        ? "Active"
-                        : "Tap to connect"}
-                  </span>
-                </span>
-                <span
-                  aria-hidden
-                  className="h-2.5 w-2.5 rounded-full bg-border-low transition group-hover:bg-primary/80"
+          {/* Scanner Input */}
+          <div className="w-full">
+            <ScannerInput
+              onAnalyze={handleAnalyze}
+              isAnalyzing={isAnalyzing}
+              disabled={isStamping} // Disable input while confirming tx
+            />
+          </div>
+
+          {/* Analysis Result Section */}
+          {analysis && (
+            <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+              <ViralGauge
+                score={analysis.score}
+                reasoning={analysis.reasoning}
+                riskLevel={analysis.riskLevel}
+                tags={analysis.tags}
+              />
+
+              <div className="flex justify-center">
+                <StampButton
+                  onClick={handleStamp}
+                  isStamping={isStamping}
+                  walletConnected={status === "connected"}
+                  hasAnalysis={!!analysis}
                 />
-              </button>
-            ))}
-          </div>
+              </div>
+            </div>
+          )}
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-border-low pt-4 text-sm">
-            <span className="rounded-lg border border-border-low bg-cream px-3 py-2 font-mono text-xs">
-              {address ?? "No wallet connected"}
-            </span>
-            <button
-              onClick={() => disconnect()}
-              disabled={status !== "connected"}
-              className="inline-flex items-center gap-2 rounded-lg border border-border-low bg-card px-3 py-2 font-medium transition hover:-translate-y-0.5 hover:shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Disconnect
-            </button>
-          </div>
-        </section>
-
-        {/* Vault Program Section */}
-        <VaultCard />
+          {/* Transaction Result */}
+          {txSignature && analysis && wallet && (
+            <div className="w-full animate-in zoom-in duration-500">
+              <ResultCard
+                finderAddress={wallet.account.address.toString()}
+                url={url}
+                score={analysis.score}
+                timestamp={Date.now() / 1000}
+                txSignature={txSignature}
+              />
+            </div>
+          )}
+        </div>
       </main>
+
+      {/* Footer */}
+      <footer className="w-full py-6 text-center text-muted text-sm font-body border-t border-border mt-auto">
+        <p>© 2024 TrendScout AI. Built on Solana.</p>
+      </footer>
     </div>
   );
 }

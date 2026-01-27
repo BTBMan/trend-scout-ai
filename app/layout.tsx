@@ -1,22 +1,12 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./components/providers";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Solana dApp Starter",
-  description: "A minimal Next.js starter powered by @solana/react-hooks",
+  title: "TrendScout AI - Alpha 趋势星探",
+  description:
+    "利用 AI 快速评估推文/代币的病毒传播潜力，并将发现永久记录在 Solana 链上",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -30,13 +20,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <Providers>
-        <body
-          suppressHydrationWarning
-          className={`${inter.variable} ${geistMono.variable} antialiased`}
-        >
+        <body suppressHydrationWarning className="antialiased">
           {children}
+          <Toaster position="top-center" richColors closeButton theme="dark" />
         </body>
       </Providers>
     </html>
