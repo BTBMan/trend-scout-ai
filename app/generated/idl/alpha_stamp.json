@@ -1,0 +1,138 @@
+{
+  "address": "7Qwx9iy2v3tx8spg8NK3x7P8ERUBo4kjkfM5ZMh8h3S",
+  "metadata": {
+    "name": "alpha_stamp",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "A simple SOL vault program"
+  },
+  "instructions": [
+    {
+      "name": "stamp_alpha",
+      "discriminator": [
+        111,
+        217,
+        89,
+        195,
+        213,
+        235,
+        95,
+        186
+      ],
+      "accounts": [
+        {
+          "name": "finder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "alpha_stamp",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  108,
+                  112,
+                  104,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "finder"
+              },
+              {
+                "kind": "arg",
+                "path": "url_seed"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "url",
+          "type": "string"
+        },
+        {
+          "name": "score",
+          "type": "u8"
+        },
+        {
+          "name": "_url_seed",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AlphaStamp",
+      "discriminator": [
+        11,
+        144,
+        192,
+        174,
+        122,
+        61,
+        226,
+        23
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidScore",
+      "msg": "Score must be between 0 and 100."
+    },
+    {
+      "code": 6001,
+      "name": "UrlTooLong",
+      "msg": "URL is too long."
+    },
+    {
+      "code": 6002,
+      "name": "InvalidUrlHash",
+      "msg": "Provided URL seed does not match actual URL hash."
+    }
+  ],
+  "types": [
+    {
+      "name": "AlphaStamp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "finder",
+            "type": "pubkey"
+          },
+          {
+            "name": "url",
+            "type": "string"
+          },
+          {
+            "name": "score",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}
