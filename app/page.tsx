@@ -27,7 +27,7 @@ export default function Home() {
   const [isStamping, setIsStamping] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
 
-  // Mock Analysis Handler (Will be replaced by API call in Step 2.2)
+  // Mock Analysis Handler (Replaced by API call)
   const handleAnalyze = async (inputUrl: string) => {
     setUrl(inputUrl);
     setIsAnalyzing(true);
@@ -35,18 +35,18 @@ export default function Home() {
     setTxSignature(null);
 
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: inputUrl }),
+      });
 
-      // Mock result
-      const mockResult: AnalysisResult = {
-        score: 88,
-        reasoning: "马斯克刚点赞了这条。流动性已锁。要起飞了。(Mock数据)",
-        riskLevel: "MEDIUM",
-        tags: ["名人互动", "高交易量", "Meme"],
-      };
+      if (!response.ok) {
+        throw new Error("Analysis failed");
+      }
 
-      setAnalysis(mockResult);
+      const data = await response.json();
+      setAnalysis(data);
       toast.success("分析完成！");
     } catch (error) {
       console.error(error);
