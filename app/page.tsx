@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useWalletConnection } from "@solana/react-hooks";
+import { useWalletConnection, useSendTransaction } from "@solana/react-hooks";
 import { useState } from "react";
 import { ScannerInput } from "./components/scanner-input";
 import { ViralGauge } from "./components/viral-gauge";
 import { StampButton } from "./components/stamp-button";
 import { ResultCard } from "./components/result-card";
 import { toast } from "sonner";
+import { sha256 } from "js-sha256";
 
 // Temporary types until API integration
 interface AnalysisResult {
@@ -19,15 +21,20 @@ interface AnalysisResult {
 export default function Home() {
   const { wallet, connect, disconnect, status, connectors } =
     useWalletConnection();
+  const { send: sendTransaction, isSending } = useSendTransaction();
 
   // State
   const [url, setUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [isStamping, setIsStamping] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
 
-  // Mock Analysis Handler (Replaced by API call)
+  function hashUrl(url: string): Uint8Array {
+    const hash = sha256(url);
+    return new Uint8Array(Buffer.from(hash, "hex"));
+  }
+
+  // Analysis Handler
   const handleAnalyze = async (inputUrl: string) => {
     setUrl(inputUrl);
     setIsAnalyzing(true);
@@ -56,24 +63,75 @@ export default function Home() {
     }
   };
 
-  // Mock Stamp Handler (Will be replaced by Solana integration in Step 2.3)
+  // Stamp Handler - Using useSendTransaction hook
   const handleStamp = async () => {
     if (!wallet || !analysis) return;
 
-    setIsStamping(true);
-    try {
-      // Simulate Transaction delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Check wallet connection
+    if (status !== "connected") {
+      toast.error("请先连接钱包");
+      return;
+    }
 
-      // Mock Signature
-      const mockSig = "5KtPk......mock_signature......";
-      setTxSignature(mockSig);
+    try {
+      // Dynamic import to avoid SSR issues
+      const { getStampAlphaInstructionAsync } =
+        await import("@/app/generated/alpha_stamp/instructions");
+
+      // Get wallet address as string
+      const walletAddress = wallet.account.address;
+
+      // Create url seed
+      const urlSeed = hashUrl(url);
+
+      // Create the instruction with a properly formatted finder
+      const instruction = await getStampAlphaInstructionAsync({
+        finder: {
+          address: walletAddress,
+          signTransactions: async () => {
+            throw new Error("Not used - signing handled by wallet");
+          },
+        },
+        url,
+        score: analysis.score,
+        urlSeed,
+      });
+
+      // Send transaction using the react-hooks helper
+      const signature = await sendTransaction({
+        instructions: [instruction],
+        feePayer: walletAddress,
+      });
+
+      setTxSignature(signature);
       toast.success("盖戳成功！已上链存证");
     } catch (error) {
-      console.error(error);
-      toast.error("交易失败");
-    } finally {
-      setIsStamping(false);
+      console.error("Transaction failed:", error);
+      // Log the full error details including cause
+      if (error && typeof error === "object") {
+        console.error(
+          "Error details:",
+          JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+        );
+        if ("cause" in error) {
+          console.error("Cause:", (error as any).cause);
+        }
+        if ("transactionPlanResult" in error) {
+          console.error(
+            "Transaction plan result:",
+            (error as any).transactionPlanResult
+          );
+        }
+      }
+      const err = error as Error;
+      if (
+        err.message?.includes("已经盖戳") ||
+        err.message?.includes("already in use")
+      ) {
+        toast.error("你已经盖戳过这个 URL 了！");
+      } else {
+        toast.error("交易失败: " + (err.message || "未知错误"));
+      }
     }
   };
 
@@ -135,7 +193,7 @@ export default function Home() {
             <ScannerInput
               onAnalyze={handleAnalyze}
               isAnalyzing={isAnalyzing}
-              disabled={isStamping} // Disable input while confirming tx
+              disabled={isSending}
             />
           </div>
 
@@ -149,14 +207,16 @@ export default function Home() {
                 tags={analysis.tags}
               />
 
-              <div className="flex justify-center">
-                <StampButton
-                  onClick={handleStamp}
-                  isStamping={isStamping}
-                  walletConnected={status === "connected"}
-                  hasAnalysis={!!analysis}
-                />
-              </div>
+              {wallet && (
+                <div className="flex justify-center">
+                  <StampButton
+                    onClick={handleStamp}
+                    isStamping={isSending}
+                    walletConnected={status === "connected"}
+                    hasAnalysis={!!analysis}
+                  />
+                </div>
+              )}
             </div>
           )}
 

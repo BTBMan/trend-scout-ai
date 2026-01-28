@@ -46,25 +46,27 @@ export async function POST(req: Request) {
       return Response.json(MOCK_DATA);
     }
 
-    try {
-      const { object } = await generateObject({
-        model: google("gemini-2.5-flash"),
-        schema: AnalysisSchema,
-        system: `You are a Degen (aggressive) crypto investor. You speak short, sharp, and humorous.
-        Analyze the viral potential of the given URL/project.
-        - If it looks like a scam => LOW score, HIGH risk, call it garbage.
-        - If it has potential => HIGH score, warn about risks but show excitement.
-        - Always use Simplified Chinese for reasoning.
-        - Keep reasoning under 200 characters.`,
-        prompt: `Analyze this URL: ${url}`,
-      });
+    return Response.json(MOCK_DATA);
 
-      return Response.json(object);
-    } catch (apiError) {
-      console.error("AI API Call Failed:", apiError);
-      // Fallback to Mock Data on API failure
-      return Response.json(MOCK_DATA);
-    }
+    // try {
+    //   const { object } = await generateObject({
+    //     model: google("gemini-2.5-flash"),
+    //     schema: AnalysisSchema,
+    //     system: `You are a Degen (aggressive) crypto investor. You speak short, sharp, and humorous.
+    //     Analyze the viral potential of the given URL/project.
+    //     - If it looks like a scam => LOW score, HIGH risk, call it garbage.
+    //     - If it has potential => HIGH score, warn about risks but show excitement.
+    //     - Always use Simplified Chinese for reasoning.
+    //     - Keep reasoning under 200 characters.`,
+    //     prompt: `Analyze this URL: ${url}`,
+    //   });
+
+    //   return Response.json(object);
+    // } catch (apiError) {
+    //   console.error("AI API Call Failed:", apiError);
+    //   // Fallback to Mock Data on API failure
+    //   return Response.json(MOCK_DATA);
+    // }
   } catch (error) {
     console.error("Request Error:", error);
     return Response.json(

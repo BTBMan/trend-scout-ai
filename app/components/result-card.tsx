@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Twitter, Copy, Check } from "lucide-react";
+import { ExternalLink, Copy, Check, X } from "lucide-react";
 import { useState } from "react";
 
 interface ResultCardProps {
@@ -130,8 +130,8 @@ export function ResultCard({
           className="flex-1 px-4 py-3 bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white font-body font-medium rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
           aria-label="分享到 Twitter"
         >
-          <Twitter className="w-4 h-4" />
-          分享到 Twitter
+          <X className="w-4 h-4" />
+          分享到 X
         </button>
       </div>
     </div>

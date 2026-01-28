@@ -3,6 +3,7 @@
   "scripts": {
     "anchor-build": "cd anchor && anchor build",
     "anchor-test": "cd anchor && anchor test --skip-deploy",
+    "anchor-deploy": "cd anchor && anchor deploy",
     "build": "next build",
     "ci": "npm run build && npm run lint && npm run format:check",
     "codama:js": "codama run js",
@@ -31,6 +32,7 @@
     "@solana/kit": "^5.1.0",
     "@solana/react-hooks": "^1.1.5",
     "ai": "^6.0.50",
+    "js-sha256": "^0.11.1",
     "lucide-react": "^0.563.0",
     "next": "16.0.10",
     "react": "19.2.3",

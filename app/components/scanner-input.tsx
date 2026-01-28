@@ -51,7 +51,7 @@ export function ScannerInput({
         <div className="relative animated-border rounded-2xl">
           <div className="glass rounded-2xl p-1">
             <div className="flex items-center gap-3 bg-background/50 rounded-xl p-4">
-              <Search className="w-6 h-6 text-primary flex-shrink-0" />
+              <Search className="w-6 h-6 text-primary shrink-0" />
               <input
                 type="url"
                 value={url}
@@ -67,7 +67,7 @@ export function ScannerInput({
               <button
                 type="submit"
                 disabled={disabled || isAnalyzing || !url.trim()}
-                className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary-light text-background font-heading font-semibold rounded-lg hover:shadow-lg hover:shadow-primary/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-6 py-2.5 bg-linear-to-r from-primary to-primary-light text-background font-heading font-semibold rounded-lg hover:shadow-lg hover:shadow-primary/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label="分析"
               >
                 {isAnalyzing ? (

@@ -1,10 +1,10 @@
 {
-  "idl": "./anchor/target/idl/vault.json",
+  "idl": "./anchor/target/idl/alpha_stamp.json",
   "scripts": {
     "js": [
       {
         "from": "@codama/renderers-js",
-        "args": ["./app/generated/vault"]
+        "args": ["./app/generated/alpha_stamp"]
       }
     ]
   }
