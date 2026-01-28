@@ -1,7 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useWalletConnection, useSendTransaction } from "@solana/react-hooks";
+import {
+  useWalletConnection,
+  useSendTransaction,
+  useAccount,
+} from "@solana/react-hooks";
 import { useEffect, useState } from "react";
 import { ScannerInput } from "./components/scanner-input";
 import { ViralGauge } from "./components/viral-gauge";
@@ -40,31 +43,50 @@ export default function Home() {
   const [txSignature, setTxSignature] = useState<string | null>(null);
   const [pda, setPda] = useState<Address | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isAlreadyStamped, setIsAlreadyStamped] = useState(false);
+  const [isCheckingStamp, setIsCheckingStamp] = useState(false);
+
+  const pdaAccountInfo = useAccount(pda || undefined);
 
   // Get wallet address as string
   const walletAddress = wallet?.account.address;
 
   useEffect(() => {
-    async function getPda() {
+    async function checkStampStatus() {
       if (!walletAddress || !url) {
         setPda(null);
+        setIsAlreadyStamped(false);
         return;
       }
 
-      const [pda] = await getProgramDerivedAddress({
-        programAddress: ALPHA_STAMP_PROGRAM_ADDRESS,
-        seeds: [
-          getBytesEncoder().encode(Buffer.from("alpha")),
-          getAddressEncoder().encode(walletAddress),
-          getBytesEncoder().encode(hashUrl(url)),
-        ],
-      });
+      setIsCheckingStamp(true);
 
-      setPda(pda);
+      try {
+        // Derive PDA
+        const [pda] = await getProgramDerivedAddress({
+          programAddress: ALPHA_STAMP_PROGRAM_ADDRESS,
+          seeds: [
+            getBytesEncoder().encode(Buffer.from("alpha")),
+            getAddressEncoder().encode(walletAddress),
+            getBytesEncoder().encode(hashUrl(url)),
+          ],
+        });
+
+        setPda(pda);
+
+        console.log("pda: ", pdaAccountInfo);
+        // If account exists, it means already stamped
+        setIsAlreadyStamped(!!pdaAccountInfo?.data && !!pdaAccountInfo.owner);
+      } catch (error) {
+        console.error("Error checking stamp status:", error);
+        setIsAlreadyStamped(false);
+      } finally {
+        setIsCheckingStamp(false);
+      }
     }
 
-    getPda();
-  }, [walletAddress, url]);
+    checkStampStatus();
+  }, [walletAddress, url, pdaAccountInfo]);
 
   function hashUrl(url: string): Uint8Array {
     const hash = sha256(url);
@@ -110,6 +132,12 @@ export default function Home() {
       return;
     }
 
+    // Check if already stamped
+    if (isAlreadyStamped) {
+      toast.error("你已经盖戳过这个 URL 了!");
+      return;
+    }
+
     try {
       // Dynamic import to avoid SSR issues
       const { getStampAlphaInstructionDataEncoder } =
@@ -142,32 +170,13 @@ export default function Home() {
       setShowSuccessModal(true);
       toast.success("盖戳成功！已上链存证");
     } catch (error) {
-      console.error("Transaction failed:", error);
-      // Log the full error details including cause
-      if (error && typeof error === "object") {
-        console.error(
-          "Error details:",
-          JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-        );
-        if ("cause" in error) {
-          console.error("Cause:", (error as any).cause);
-        }
-        if ("transactionPlanResult" in error) {
-          console.error(
-            "Transaction plan result:",
-            (error as any).transactionPlanResult
-          );
-        }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let err: any = error;
+      if (err && typeof err === "object") {
+        err = err.cause || err.transactionPlanResult || err.message;
       }
-      const err = error as Error;
-      if (
-        err.message?.includes("已经盖戳") ||
-        err.message?.includes("already in use")
-      ) {
-        toast.error("你已经盖戳过这个 URL 了！");
-      } else {
-        toast.error("交易失败: " + (err.message || "未知错误"));
-      }
+
+      toast.error("交易失败: " + (err || "未知错误"));
     }
   };
 
@@ -248,6 +257,8 @@ export default function Home() {
                   <StampButton
                     onClick={handleStamp}
                     isStamping={isSending}
+                    isChecking={isCheckingStamp}
+                    isAlreadyStamped={isAlreadyStamped}
                     walletConnected={status === "connected"}
                     hasAnalysis={!!analysis}
                   />

@@ -1,10 +1,12 @@
 "use client";
 
-import { Loader2, Stamp } from "lucide-react";
+import { Loader2, Stamp, Check } from "lucide-react";
 
 interface StampButtonProps {
   onClick: () => void;
   isStamping: boolean;
+  isChecking?: boolean;
+  isAlreadyStamped?: boolean;
   disabled?: boolean;
   walletConnected: boolean;
   hasAnalysis: boolean;
@@ -13,6 +15,8 @@ interface StampButtonProps {
 export function StampButton({
   onClick,
   isStamping,
+  isChecking = false,
+  isAlreadyStamped = false,
   disabled,
   walletConnected,
   hasAnalysis,
@@ -30,6 +34,22 @@ export function StampButton({
       return {
         text: "Paste URL to Start",
         icon: null,
+        disabled: true,
+      };
+    }
+
+    if (isChecking) {
+      return {
+        text: "检查盖戳状态...",
+        icon: <Loader2 className="w-5 h-5 animate-spin" />,
+        disabled: true,
+      };
+    }
+
+    if (isAlreadyStamped) {
+      return {
+        text: "已盖戳",
+        icon: <Check className="w-5 h-5" />,
         disabled: true,
       };
     }
