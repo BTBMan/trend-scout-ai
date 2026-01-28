@@ -2,13 +2,21 @@
 "use client";
 
 import { useWalletConnection, useSendTransaction } from "@solana/react-hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScannerInput } from "./components/scanner-input";
 import { ViralGauge } from "./components/viral-gauge";
 import { StampButton } from "./components/stamp-button";
 import { ResultCard } from "./components/result-card";
 import { toast } from "sonner";
 import { sha256 } from "js-sha256";
+import { TransactionInstructionInput } from "@solana/client";
+import { ALPHA_STAMP_PROGRAM_ADDRESS } from "./generated/alpha_stamp";
+import {
+  Address,
+  getAddressEncoder,
+  getBytesEncoder,
+  getProgramDerivedAddress,
+} from "@solana/kit";
 
 // Temporary types until API integration
 interface AnalysisResult {
@@ -17,6 +25,8 @@ interface AnalysisResult {
   riskLevel: "LOW" | "MEDIUM" | "HIGH";
   tags: string[];
 }
+
+const SYSTEM_PROGRAM_ADDRESS = "11111111111111111111111111111111" as Address;
 
 export default function Home() {
   const { wallet, connect, disconnect, status, connectors } =
@@ -28,6 +38,32 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [txSignature, setTxSignature] = useState<string | null>(null);
+  const [pda, setPda] = useState<Address | null>(null);
+
+  // Get wallet address as string
+  const walletAddress = wallet?.account.address;
+
+  useEffect(() => {
+    async function getPda() {
+      if (!walletAddress || !url) {
+        setPda(null);
+        return;
+      }
+
+      const [pda] = await getProgramDerivedAddress({
+        programAddress: ALPHA_STAMP_PROGRAM_ADDRESS,
+        seeds: [
+          getBytesEncoder().encode(Buffer.from("alpha")),
+          getAddressEncoder().encode(walletAddress),
+          getBytesEncoder().encode(hashUrl(url)),
+        ],
+      });
+
+      setPda(pda);
+    }
+
+    getPda();
+  }, [walletAddress, url]);
 
   function hashUrl(url: string): Uint8Array {
     const hash = sha256(url);
@@ -75,32 +111,30 @@ export default function Home() {
 
     try {
       // Dynamic import to avoid SSR issues
-      const { getStampAlphaInstructionAsync } =
+      const { getStampAlphaInstructionDataEncoder } =
         await import("@/app/generated/alpha_stamp/instructions");
-
-      // Get wallet address as string
-      const walletAddress = wallet.account.address;
 
       // Create url seed
       const urlSeed = hashUrl(url);
 
       // Create the instruction with a properly formatted finder
-      const instruction = await getStampAlphaInstructionAsync({
-        finder: {
-          address: walletAddress,
-          signTransactions: async () => {
-            throw new Error("Not used - signing handled by wallet");
-          },
-        },
-        url,
-        score: analysis.score,
-        urlSeed,
-      });
+      const instruction: TransactionInstructionInput = {
+        programAddress: ALPHA_STAMP_PROGRAM_ADDRESS,
+        accounts: [
+          { address: walletAddress!, role: 3 },
+          { address: pda!, role: 1 },
+          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 },
+        ],
+        data: getStampAlphaInstructionDataEncoder().encode({
+          url,
+          score: analysis.score,
+          urlSeed,
+        }),
+      };
 
       // Send transaction using the react-hooks helper
       const signature = await sendTransaction({
         instructions: [instruction],
-        feePayer: walletAddress,
       });
 
       setTxSignature(signature);

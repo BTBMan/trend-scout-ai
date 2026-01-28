@@ -55,7 +55,7 @@ export function ViralGauge({
   return (
     <div className="glass rounded-2xl p-8 max-w-2xl mx-auto">
       {/* Gauge visualization */}
-      <div className="relative w-64 h-32 mx-auto mb-8">
+      <div className="relative w-64 h-40 mx-auto mb-8">
         {/* Background arc */}
         <svg className="w-full h-full" viewBox="0 0 200 100">
           <path
@@ -82,7 +82,7 @@ export function ViralGauge({
         </svg>
 
         {/* Center score display */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center mt-8">
           <div className={`text-6xl font-heading font-bold text-${color}`}>
             {displayScore}
           </div>
