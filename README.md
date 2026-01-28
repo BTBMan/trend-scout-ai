@@ -229,9 +229,16 @@ anchor deploy
 
 ### 部署前端到 Vercel
 
-```bash
-vercel deploy
-```
+**快速部署**:
+
+1. 推送代码到 GitHub
+2. 访问 [vercel.com/new](https://vercel.com/new)
+3. 导入你的仓库
+4. 配置环境变量 (可选):
+   - `GOOGLE_GENERATIVE_AI_API_KEY`
+5. 点击 Deploy
+
+部署完成后,你会得到一个类似 `https://trend-scout-ai.vercel.app` 的 URL。
 
 ## 🤝 贡献指南
 
