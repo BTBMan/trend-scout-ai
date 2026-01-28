@@ -1,170 +1,416 @@
 #[cfg(test)]
 mod tests {
-    use crate::ID as PROGRAM_ID;
+    use crate::*;
+    use anchor_lang::{InstructionData, ToAccountMetas};
     use litesvm::LiteSVM;
     use solana_sdk::{
-        instruction::{AccountMeta, Instruction},
-        pubkey::Pubkey,
-        signature::Keypair,
-        signer::Signer,
-        system_program,
+        instruction::Instruction,
+        signature::{Keypair, Signer},
         transaction::Transaction,
     };
 
-    const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
+    /// Helper function to setup test environment
+    fn setup() -> (LiteSVM, Keypair, Keypair) {
+        let mut svm = LiteSVM::new();
+        let payer = Keypair::new();
+        let finder = Keypair::new();
 
-    fn get_vault_pda(signer: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(&[b"vault", signer.as_ref()], &PROGRAM_ID)
+        // Airdrop SOL to payer and finder
+        svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
+        svm.airdrop(&finder.pubkey(), 10_000_000_000).unwrap();
+
+        // Add program to test environment
+        let program_data = include_bytes!("../../../target/deploy/alpha_stamp.so");
+        svm.add_program(crate::ID, program_data);
+
+        (svm, payer, finder)
     }
 
-    fn create_deposit_ix(signer: &Pubkey, vault: &Pubkey, amount: u64) -> Instruction {
-        // Anchor discriminator for "deposit" = hash("global:deposit")[0..8]
-        let discriminator: [u8; 8] = [242, 35, 198, 137, 82, 225, 242, 182];
-        let mut data = discriminator.to_vec();
-        data.extend_from_slice(&amount.to_le_bytes());
-
-        Instruction {
-            program_id: PROGRAM_ID,
-            accounts: vec![
-                AccountMeta::new(*signer, true),
-                AccountMeta::new(*vault, false),
-                AccountMeta::new_readonly(system_program::ID, false),
-            ],
-            data,
-        }
-    }
-
-    fn create_withdraw_ix(signer: &Pubkey, vault: &Pubkey) -> Instruction {
-        // Anchor discriminator for "withdraw" = hash("global:withdraw")[0..8]
-        let discriminator: [u8; 8] = [183, 18, 70, 156, 148, 109, 161, 34];
-
-        Instruction {
-            program_id: PROGRAM_ID,
-            accounts: vec![
-                AccountMeta::new(*signer, true),
-                AccountMeta::new(*vault, false),
-                AccountMeta::new_readonly(system_program::ID, false),
-            ],
-            data: discriminator.to_vec(),
-        }
+    /// Helper function to derive PDA
+    fn get_alpha_stamp_pda(finder: &Pubkey, url_seed: &[u8; 32]) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[b"alpha", finder.as_ref(), url_seed.as_ref()], &crate::ID)
     }
 
     #[test]
-    fn test_deposit_and_withdraw() {
-        let mut svm = LiteSVM::new();
+    fn test_stamp_alpha_success() {
+        let (mut svm, payer, finder) = setup();
 
-        // Load the program
-        let program_bytes = include_bytes!("../../../target/deploy/vault.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let url = "https://trends.fun/test";
+        let score = 88u8;
+        let url_seed = url_hash(url);
 
-        // Create a user with some SOL
-        let user = Keypair::new();
-        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        let (alpha_stamp_pda, _bump) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed);
 
-        // Get vault PDA
-        let (vault_pda, _bump) = get_vault_pda(&user.pubkey());
+        // Create instruction
+        let ix = crate::instruction::StampAlpha {
+            url: url.to_string(),
+            score,
+            _url_seed: url_seed,
+        };
 
-        // Deposit 1 SOL
-        let deposit_amount = LAMPORTS_PER_SOL;
-        let deposit_ix = create_deposit_ix(&user.pubkey(), &vault_pda, deposit_amount);
+        let accounts = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: alpha_stamp_pda,
+            system_program: solana_sdk::system_program::ID,
+        };
 
-        let blockhash = svm.latest_blockhash();
-        let deposit_tx = Transaction::new_signed_with_payer(
-            &[deposit_ix],
-            Some(&user.pubkey()),
-            &[&user],
-            blockhash,
-        );
+        let instruction = Instruction {
+            program_id: crate::ID,
+            accounts: accounts.to_account_metas(None),
+            data: ix.data(),
+        };
 
-        let result = svm.send_transaction(deposit_tx);
-        assert!(result.is_ok(), "Deposit should succeed");
-
-        // Check vault balance
-        let vault_account = svm.get_account(&vault_pda).unwrap();
-        assert_eq!(vault_account.lamports, deposit_amount);
-
-        // Withdraw
-        let withdraw_ix = create_withdraw_ix(&user.pubkey(), &vault_pda);
-
-        let blockhash = svm.latest_blockhash();
-        let withdraw_tx = Transaction::new_signed_with_payer(
-            &[withdraw_ix],
-            Some(&user.pubkey()),
-            &[&user],
-            blockhash,
-        );
-
-        let result = svm.send_transaction(withdraw_tx);
-        assert!(result.is_ok(), "Withdraw should succeed");
-
-        // Check vault is empty (account may not exist or have 0 lamports)
-        let vault_account = svm.get_account(&vault_pda);
-        assert!(
-            vault_account.is_none() || vault_account.unwrap().lamports == 0,
-            "Vault should be empty after withdraw"
-        );
-    }
-
-    #[test]
-    fn test_deposit_fails_if_vault_has_funds() {
-        let mut svm = LiteSVM::new();
-
-        let program_bytes = include_bytes!("../../../target/deploy/vault.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
-
-        let user = Keypair::new();
-        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
-
-        let (vault_pda, _bump) = get_vault_pda(&user.pubkey());
-
-        // First deposit
-        let deposit_ix = create_deposit_ix(&user.pubkey(), &vault_pda, LAMPORTS_PER_SOL);
-        let blockhash = svm.latest_blockhash();
         let tx = Transaction::new_signed_with_payer(
-            &[deposit_ix],
-            Some(&user.pubkey()),
-            &[&user],
-            blockhash,
-        );
-        svm.send_transaction(tx).unwrap();
-
-        // Second deposit should fail
-        let deposit_ix2 = create_deposit_ix(&user.pubkey(), &vault_pda, LAMPORTS_PER_SOL);
-        let blockhash = svm.latest_blockhash();
-        let tx2 = Transaction::new_signed_with_payer(
-            &[deposit_ix2],
-            Some(&user.pubkey()),
-            &[&user],
-            blockhash,
+            &[instruction],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
         );
 
-        let result = svm.send_transaction(tx2);
-        assert!(result.is_err(), "Second deposit should fail");
+        // Execute transaction
+        let result = svm.send_transaction(tx);
+        assert!(result.is_ok(), "Transaction should succeed");
+
+        // Verify account data
+        let account = svm.get_account(&alpha_stamp_pda).unwrap();
+
+        // Deserialize and verify data
+        let alpha_stamp: AlphaStamp = AlphaStamp::try_deserialize(&mut &account.data[..]).unwrap();
+
+        assert_eq!(alpha_stamp.finder, finder.pubkey());
+        assert_eq!(alpha_stamp.url, url);
+        assert_eq!(alpha_stamp.score, score);
+        // Note: timestamp may be 0 in test environment
     }
 
     #[test]
-    fn test_withdraw_fails_if_vault_empty() {
-        let mut svm = LiteSVM::new();
+    fn test_pda_derivation() {
+        let finder = Keypair::new();
+        let url = "https://twitter.com/test";
+        let url_seed = url_hash(url);
 
-        let program_bytes = include_bytes!("../../../target/deploy/vault.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let (pda1, bump1) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed);
+        let (pda2, bump2) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed);
 
-        let user = Keypair::new();
-        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        assert_eq!(pda1, pda2, "Same inputs should produce same PDA");
+        assert_eq!(bump1, bump2, "Same inputs should produce same bump");
+    }
 
-        let (vault_pda, _bump) = get_vault_pda(&user.pubkey());
+    #[test]
+    fn test_invalid_score_too_high() {
+        let (mut svm, payer, finder) = setup();
 
-        // Try to withdraw from empty vault
-        let withdraw_ix = create_withdraw_ix(&user.pubkey(), &vault_pda);
-        let blockhash = svm.latest_blockhash();
+        let url = "https://trends.fun/test";
+        let score = 101u8; // Invalid: > 100
+        let url_seed = url_hash(url);
+
+        let (alpha_stamp_pda, _bump) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed);
+
+        let ix = crate::instruction::StampAlpha {
+            url: url.to_string(),
+            score,
+            _url_seed: url_seed,
+        };
+
+        let accounts = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: alpha_stamp_pda,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction = Instruction {
+            program_id: crate::ID,
+            accounts: accounts.to_account_metas(None),
+            data: ix.data(),
+        };
+
         let tx = Transaction::new_signed_with_payer(
-            &[withdraw_ix],
-            Some(&user.pubkey()),
-            &[&user],
-            blockhash,
+            &[instruction],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
         );
 
         let result = svm.send_transaction(tx);
-        assert!(result.is_err(), "Withdraw from empty vault should fail");
+        assert!(
+            result.is_err(),
+            "Transaction should fail with invalid score"
+        );
+    }
+
+    #[test]
+    fn test_score_boundary_values() {
+        let (mut svm, payer, finder) = setup();
+
+        // Test score = 0 (valid)
+        let url1 = "https://trends.fun/test1";
+        let score1 = 0u8;
+        let url_seed1 = url_hash(url1);
+        let (pda1, _) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed1);
+
+        let ix1 = crate::instruction::StampAlpha {
+            url: url1.to_string(),
+            score: score1,
+            _url_seed: url_seed1,
+        };
+
+        let accounts1 = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: pda1,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction1 = Instruction {
+            program_id: crate::ID,
+            accounts: accounts1.to_account_metas(None),
+            data: ix1.data(),
+        };
+
+        let tx1 = Transaction::new_signed_with_payer(
+            &[instruction1],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
+        );
+
+        assert!(svm.send_transaction(tx1).is_ok(), "Score 0 should be valid");
+
+        // Test score = 100 (valid)
+        let url2 = "https://trends.fun/test2";
+        let score2 = 100u8;
+        let url_seed2 = url_hash(url2);
+        let (pda2, _) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed2);
+
+        let ix2 = crate::instruction::StampAlpha {
+            url: url2.to_string(),
+            score: score2,
+            _url_seed: url_seed2,
+        };
+
+        let accounts2 = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: pda2,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction2 = Instruction {
+            program_id: crate::ID,
+            accounts: accounts2.to_account_metas(None),
+            data: ix2.data(),
+        };
+
+        let tx2 = Transaction::new_signed_with_payer(
+            &[instruction2],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
+        );
+
+        assert!(
+            svm.send_transaction(tx2).is_ok(),
+            "Score 100 should be valid"
+        );
+    }
+
+    #[test]
+    fn test_url_too_long() {
+        let (mut svm, payer, finder) = setup();
+
+        // Create URL with 101 characters
+        let url = "a".repeat(101);
+        let score = 50u8;
+        let url_seed = url_hash(&url);
+
+        let (alpha_stamp_pda, _bump) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed);
+
+        let ix = crate::instruction::StampAlpha {
+            url: url.clone(),
+            score,
+            _url_seed: url_seed,
+        };
+
+        let accounts = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: alpha_stamp_pda,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction = Instruction {
+            program_id: crate::ID,
+            accounts: accounts.to_account_metas(None),
+            data: ix.data(),
+        };
+
+        let tx = Transaction::new_signed_with_payer(
+            &[instruction],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
+        );
+
+        let result = svm.send_transaction(tx);
+        assert!(result.is_err(), "Transaction should fail with URL too long");
+    }
+
+    #[test]
+    fn test_url_max_length() {
+        let (mut svm, payer, finder) = setup();
+
+        // Create URL with exactly 100 characters (valid)
+        let url = "a".repeat(100);
+        let score = 50u8;
+        let url_seed = url_hash(&url);
+
+        let (alpha_stamp_pda, _bump) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed);
+
+        let ix = crate::instruction::StampAlpha {
+            url: url.clone(),
+            score,
+            _url_seed: url_seed,
+        };
+
+        let accounts = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: alpha_stamp_pda,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction = Instruction {
+            program_id: crate::ID,
+            accounts: accounts.to_account_metas(None),
+            data: ix.data(),
+        };
+
+        let tx = Transaction::new_signed_with_payer(
+            &[instruction],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
+        );
+
+        assert!(
+            svm.send_transaction(tx).is_ok(),
+            "URL with 100 chars should be valid"
+        );
+    }
+
+    #[test]
+    fn test_invalid_url_hash() {
+        let (mut svm, payer, finder) = setup();
+
+        let url = "https://trends.fun/test";
+        let score = 50u8;
+        let correct_url_seed = url_hash(url);
+
+        // Use wrong hash
+        let mut wrong_url_seed = correct_url_seed;
+        wrong_url_seed[0] = wrong_url_seed[0].wrapping_add(1);
+
+        let (alpha_stamp_pda, _bump) = get_alpha_stamp_pda(&finder.pubkey(), &wrong_url_seed);
+
+        let ix = crate::instruction::StampAlpha {
+            url: url.to_string(),
+            score,
+            _url_seed: wrong_url_seed,
+        };
+
+        let accounts = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: alpha_stamp_pda,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction = Instruction {
+            program_id: crate::ID,
+            accounts: accounts.to_account_metas(None),
+            data: ix.data(),
+        };
+
+        let tx = Transaction::new_signed_with_payer(
+            &[instruction],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
+        );
+
+        let result = svm.send_transaction(tx);
+        assert!(
+            result.is_err(),
+            "Transaction should fail with invalid URL hash"
+        );
+    }
+
+    #[test]
+    fn test_duplicate_stamp_prevention() {
+        let (mut svm, payer, finder) = setup();
+
+        let url = "https://trends.fun/test";
+        let score = 75u8;
+        let url_seed = url_hash(url);
+
+        let (alpha_stamp_pda, _bump) = get_alpha_stamp_pda(&finder.pubkey(), &url_seed);
+
+        // First stamp - should succeed
+        let ix1 = crate::instruction::StampAlpha {
+            url: url.to_string(),
+            score,
+            _url_seed: url_seed,
+        };
+
+        let accounts1 = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: alpha_stamp_pda,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction1 = Instruction {
+            program_id: crate::ID,
+            accounts: accounts1.to_account_metas(None),
+            data: ix1.data(),
+        };
+
+        let tx1 = Transaction::new_signed_with_payer(
+            &[instruction1],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
+        );
+
+        assert!(
+            svm.send_transaction(tx1).is_ok(),
+            "First stamp should succeed"
+        );
+
+        // Second stamp with same URL and finder - should fail
+        let ix2 = crate::instruction::StampAlpha {
+            url: url.to_string(),
+            score,
+            _url_seed: url_seed,
+        };
+
+        let accounts2 = crate::accounts::StampAlpha {
+            finder: finder.pubkey(),
+            alpha_stamp: alpha_stamp_pda,
+            system_program: solana_sdk::system_program::ID,
+        };
+
+        let instruction2 = Instruction {
+            program_id: crate::ID,
+            accounts: accounts2.to_account_metas(None),
+            data: ix2.data(),
+        };
+
+        let tx2 = Transaction::new_signed_with_payer(
+            &[instruction2],
+            Some(&payer.pubkey()),
+            &[&payer, &finder],
+            svm.latest_blockhash(),
+        );
+
+        let result = svm.send_transaction(tx2);
+        assert!(
+            result.is_err(),
+            "Duplicate stamp should fail (account already exists)"
+        );
     }
 }

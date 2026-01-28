@@ -90,3 +90,6 @@ pub enum ErrorCode {
     #[msg("Provided URL seed does not match actual URL hash.")]
     InvalidUrlHash,
 }
+
+#[cfg(test)]
+mod tests;
