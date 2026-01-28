@@ -50,7 +50,7 @@ export function ViralGauge({
   const { color, label, icon: Icon } = getScoreColor();
 
   // Calculate gauge rotation (semi-circle: -90deg to 90deg)
-  const rotation = -90 + (displayScore / 100) * 180;
+  // const rotation = -90 + (displayScore / 100) * 180;
 
   return (
     <div className="glass rounded-2xl p-8 max-w-2xl mx-auto">
