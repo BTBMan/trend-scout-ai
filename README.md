@@ -1,118 +1,253 @@
-# trend-scout-ai
+# 🔥 TrendScout AI - Alpha 趋势星探
 
-Next.js starter with Tailwind CSS, `@solana/react-hooks`, and an Anchor vault program example.
+> 利用 AI 快速评估推文/代币的爆火潜力，并将发现永久记录在 Solana 链上
 
-## Getting Started
+[![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?logo=solana)](https://solana.com)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
+[![Anchor](https://img.shields.io/badge/Anchor-0.30-coral)](https://www.anchor-lang.com)
 
-```shell
-npx -y create-solana-dapp@latest -t solana-foundation/templates/kit/trend-scout-ai
-```
+## 📖 项目简介
 
-```shell
-npm install   # Builds program and generates client automatically
-npm run dev
-```
+**TrendScout AI** 是一个基于 Solana 的 SocialFi 工具，帮助加密投资者发现并验证 Alpha 机会。通过 AI 分析内容的爆火潜力，并将发现"盖戳"上链，创建不可篡改的链上证明。
 
-Open [http://localhost:3000](http://localhost:3000), connect your wallet, and interact with the vault on devnet.
+### 🎯 核心功能
 
-## What's Included
+- **🤖 AI 智能分析**: 使用 Google Gemini 分析 Trends.fun 推文内容
+- **📊 爆火指数评分**: 0-100 分的量化评分系统
+- **⚠️ 风险评估**: LOW/MEDIUM/HIGH 三级风险提示
+- **🔐 链上存证**: 将发现永久记录到 Solana 区块链
+- **🚫 防重复盖戳**: 基于 PDA 的去重机制
+- **🎨 赛博朋克 UI**: Glassmorphism 风格的现代化界面
 
-- **Wallet connection** via `@solana/react-hooks` with auto-discovery
-- **SOL Vault program** - deposit and withdraw SOL from a personal PDA vault
-- **Codama-generated client** - type-safe program interactions using `@solana/kit`
-- **Tailwind CSS v4** with light/dark mode
+## 🚀 快速开始
 
-## Stack
+### 前置要求
 
-| Layer          | Technology                              |
-| -------------- | --------------------------------------- |
-| Frontend       | Next.js 16, React 19, TypeScript        |
-| Styling        | Tailwind CSS v4                         |
-| Solana Client  | `@solana/client`, `@solana/react-hooks` |
-| Program Client | Codama-generated, `@solana/kit`         |
-| Program        | Anchor (Rust)                           |
-
-## Project Structure
-
-```
-├── app/
-│   ├── components/
-│   │   ├── providers.tsx      # Solana client setup
-│   │   └── vault-card.tsx     # Vault deposit/withdraw UI
-│   ├── generated/vault/       # Codama-generated program client
-│   └── page.tsx               # Main page
-├── anchor/                    # Anchor workspace
-│   └── programs/vault/        # Vault program (Rust)
-└── codama.json                # Codama client generation config
-```
-
-## Deploy Your Own Vault
-
-The included vault program is already deployed to devnet. To deploy your own:
-
-### Prerequisites
-
+- [Node.js](https://nodejs.org/) 18+
 - [Rust](https://rustup.rs/)
 - [Solana CLI](https://solana.com/docs/intro/installation)
 - [Anchor](https://www.anchor-lang.com/docs/installation)
 
-### Steps
+### 安装步骤
 
-1. **Configure Solana CLI for devnet**
-
-   ```bash
-   solana config set --url devnet
-   ```
-
-2. **Create a wallet (if needed) and fund it**
+1. **克隆仓库**
 
    ```bash
-   solana-keygen new
-   solana airdrop 2
+   git clone https://github.com/BTBMan/trend-scout-ai.git
+   cd trend-scout-ai
    ```
 
-3. **Build and deploy the program**
+2. **安装依赖**
+
+   ```bash
+   npm install
+   ```
+
+3. **配置环境变量**
+
+   创建 `.env.local` 文件:
+
+   ```env
+   # Google Gemini API Key (可选，不配置会使用 Mock 数据)
+   GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
+   ```
+
+4. **启动本地 Solana 验证器** (可选)
+
+   ```bash
+   solana-test-validator
+   ```
+
+5. **部署智能合约** (如果使用本地验证器)
 
    ```bash
    cd anchor
    anchor build
-   anchor keys sync    # Updates program ID in source
-   anchor build        # Rebuild with new ID
-   anchor deploy
+   anchor deploy --provider.cluster localnet
    cd ..
    ```
 
-4. **Regenerate the client and restart**
+6. **启动开发服务器**
+
    ```bash
-   npm run setup   # Rebuilds program and regenerates client
    npm run dev
    ```
 
-## Testing
+7. **打开浏览器**
 
-Tests use [LiteSVM](https://github.com/LiteSVM/litesvm), a fast lightweight Solana VM for testing.
+   访问 [http://localhost:3000](http://localhost:3000)
 
-```bash
-npm run anchor-build   # Build the program first
-npm run anchor-test    # Run tests
+## 💡 使用指南
+
+### 用户流程
+
+1. **连接钱包** - 点击右上角连接 Solana 钱包 (Phantom/Solflare)
+2. **输入 URL** - 粘贴 Trends.fun 推文链接
+3. **AI 分析** - 等待 AI 分析并返回爆火指数
+4. **查看结果** - 查看评分、风险等级和 AI 评语
+5. **盖戳上链** - 点击"Stamp On-Chain"按钮签名交易
+6. **获得证明** - 查看链上交易记录和可分享的结果卡片
+
+### 示例 URL
+
+```
+https://trends.fun/post/abc123...
 ```
 
-The tests are in `anchor/programs/vault/src/tests.rs` and automatically use the program ID from `declare_id!`.
+## 🏗️ 技术架构
 
-## Regenerating the Client
+### 前端技术栈
 
-If you modify the program, regenerate the TypeScript client:
+| 技术                    | 用途                     |
+| ----------------------- | ------------------------ |
+| **Next.js 15**          | React 框架 (App Router)  |
+| **TypeScript**          | 类型安全                 |
+| **Tailwind CSS v4**     | 样式系统                 |
+| **@solana/react-hooks** | Solana 钱包集成          |
+| **@solana/kit**         | 类型安全的 Solana 客户端 |
+| **Vercel AI SDK**       | AI 集成                  |
+| **Google Gemini**       | 内容分析                 |
 
-```bash
-npm run setup   # Or: npm run anchor-build && npm run codama:js
+### 智能合约
+
+- **框架**: Anchor 0.30
+- **语言**: Rust
+- **网络**: Solana Devnet/Localnet
+- **程序 ID**: `7Qwx9iy2v3tx8spg8NK3x7P8ERUBo4kjkfM5ZMh8h3S`
+
+### 数据结构
+
+```rust
+pub struct AlphaStamp {
+    pub finder: Pubkey,      // 发现者钱包地址
+    pub url: String,         // 推文 URL (最大 100 字符)
+    pub score: u8,           // 爆火指数 (0-100)
+    pub timestamp: i64,      // 盖戳时间戳
+}
 ```
 
-This uses [Codama](https://github.com/codama-idl/codama) to generate a type-safe client from the Anchor IDL.
+## 📁 项目结构
 
-## Learn More
+```
+trend-scout-ai/
+├── app/                          # Next.js 应用
+│   ├── api/
+│   │   └── analyze/              # AI 分析 API
+│   ├── components/               # React 组件
+│   │   ├── scanner-input.tsx     # URL 输入框
+│   │   ├── viral-gauge.tsx       # 爆火指数仪表盘
+│   │   ├── stamp-button.tsx      # 盖戳按钮
+│   │   ├── result-card.tsx       # 结果卡片
+│   │   └── success-modal.tsx     # 成功弹窗
+│   ├── generated/                # Codama 生成的客户端
+│   ├── lib/
+│   │   └── fetch-url.ts          # URL 内容抓取
+│   └── page.tsx                  # 主页面
+├── anchor/                       # Anchor 工作空间
+│   └── programs/
+│       └── alpha_stamp/          # AlphaStamp 智能合约
+└── codama.json                   # 客户端生成配置
+```
 
-- [Solana Docs](https://solana.com/docs) - core concepts and guides
-- [Anchor Docs](https://www.anchor-lang.com/docs) - program development framework
-- [Deploying Programs](https://solana.com/docs/programs/deploying) - deployment guide
-- [framework-kit](https://github.com/solana-foundation/framework-kit) - the React hooks used here
-- [Codama](https://github.com/codama-idl/codama) - client generation from IDL
+## 🧪 测试
+
+### 运行智能合约测试
+
+```bash
+cd anchor
+cargo test --package alpha-stamp -- --test-threads=1
+```
+
+### 测试覆盖
+
+- ✅ 基本盖戳功能
+- ✅ PDA 派生验证
+- ✅ 防重复盖戳
+- ✅ 分数边界值测试
+- ✅ URL 长度限制
+- ✅ 无效输入处理
+
+## 🎨 UI 设计
+
+### 设计系统
+
+- **风格**: Glassmorphism (玻璃态)
+- **配色**:
+  - 主色: 金色 `#F59E0B`
+  - CTA: 紫色 `#8B5CF6`
+  - 背景: 深蓝 `#0F172A`
+- **字体**:
+  - 标题: Orbitron
+  - 正文: Exo 2
+
+### 评分颜色映射
+
+- 🔴 **0-40**: 红色 (Rekt/垃圾)
+- 🟡 **41-79**: 黄色 (Mid/一般)
+- 🟢 **80-100**: 绿色 (Alpha/金狗)
+
+## 🔧 开发指南
+
+### 修改智能合约
+
+1. 编辑 `anchor/programs/alpha_stamp/src/lib.rs`
+2. 重新构建和部署:
+   ```bash
+   cd anchor
+   anchor build
+   anchor deploy
+   ```
+3. 重新生成客户端:
+   ```bash
+   npm run codama:js
+   ```
+
+### 添加新组件
+
+1. 在 `app/components/` 创建新组件
+2. 遵循现有的设计系统 (使用 Tailwind CSS 变量)
+3. 确保组件支持深色模式
+
+## 📝 环境变量
+
+| 变量名                         | 必需 | 说明                                         |
+| ------------------------------ | ---- | -------------------------------------------- |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | 否   | Google Gemini API Key,不配置会使用 Mock 数据 |
+
+## 🚀 部署
+
+### 部署智能合约到 Devnet
+
+```bash
+cd anchor
+solana config set --url devnet
+anchor build
+anchor keys sync
+anchor build
+anchor deploy
+```
+
+### 部署前端到 Vercel
+
+```bash
+vercel deploy
+```
+
+## 🤝 贡献指南
+
+欢迎提交 Issue 和 Pull Request!
+
+## 📄 许可证
+
+MIT License
+
+## 🔗 相关链接
+
+- [Solana 文档](https://solana.com/docs)
+- [Anchor 文档](https://www.anchor-lang.com/docs)
+- [Next.js 文档](https://nextjs.org/docs)
+- [Vercel AI SDK](https://sdk.vercel.ai/docs)
+
+---
+
+**Built with ❤️ for Solana Hackathon**
