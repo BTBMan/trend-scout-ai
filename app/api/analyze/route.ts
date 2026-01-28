@@ -27,7 +27,8 @@ const AnalysisSchema = z.object({
 // Mock Data for fallback
 const MOCK_DATA = {
   score: 88,
-  reasoning: "马斯克刚点赞了这条。流动性已锁。要起飞了。(Mock数据)",
+  reasoning:
+    "马斯克刚点赞了这条。流动性已锁。要起飞了。(Mock数据，AI_API_KEY 未配置或额度用尽)",
   riskLevel: "MEDIUM" as const,
   tags: ["名人互动", "高交易量", "Meme"],
 };

@@ -74,7 +74,6 @@ export default function Home() {
 
         setPda(pda);
 
-        console.log("pda: ", pdaAccountInfo);
         // If account exists, it means already stamped
         setIsAlreadyStamped(!!pdaAccountInfo?.data && !!pdaAccountInfo.owner);
       } catch (error) {
