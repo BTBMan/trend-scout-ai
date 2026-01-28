@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { ScannerInput } from "./components/scanner-input";
 import { ViralGauge } from "./components/viral-gauge";
 import { StampButton } from "./components/stamp-button";
-import { ResultCard } from "./components/result-card";
+import { SuccessModal } from "./components/success-modal";
 import { toast } from "sonner";
 import { sha256 } from "js-sha256";
 import { TransactionInstructionInput } from "@solana/client";
@@ -39,6 +39,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [txSignature, setTxSignature] = useState<string | null>(null);
   const [pda, setPda] = useState<Address | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Get wallet address as string
   const walletAddress = wallet?.account.address;
@@ -138,6 +139,7 @@ export default function Home() {
       });
 
       setTxSignature(signature);
+      setShowSuccessModal(true);
       toast.success("盖戳成功！已上链存证");
     } catch (error) {
       console.error("Transaction failed:", error);
@@ -254,17 +256,17 @@ export default function Home() {
             </div>
           )}
 
-          {/* Transaction Result */}
+          {/* Success Modal */}
           {txSignature && analysis && wallet && (
-            <div className="w-full animate-in zoom-in duration-500">
-              <ResultCard
-                finderAddress={wallet.account.address.toString()}
-                url={url}
-                score={analysis.score}
-                timestamp={Date.now() / 1000}
-                txSignature={txSignature}
-              />
-            </div>
+            <SuccessModal
+              isOpen={showSuccessModal}
+              onClose={() => setShowSuccessModal(false)}
+              finderAddress={wallet.account.address.toString()}
+              url={url}
+              score={analysis.score}
+              timestamp={Date.now() / 1000}
+              txSignature={txSignature}
+            />
           )}
         </div>
       </main>
