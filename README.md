@@ -1,10 +1,14 @@
 # 🔥 TrendScout AI - Alpha 趋势星探
 
-> 利用 AI 快速评估推文/代币的爆火潜力，并将发现永久记录在 Solana 链上
+> 利用 AI 快速评估推文/代币的爆火潜力,并将发现永久记录在 Solana 链上
 
 [![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?logo=solana)](https://solana.com)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
 [![Anchor](https://img.shields.io/badge/Anchor-0.30-coral)](https://www.anchor-lang.com)
+
+## 🌐 Live Demo
+
+**🚀 [https://trend-aiscout.vercel.app](https://trend-aiscout.vercel.app)**
 
 ## 📖 项目简介
 

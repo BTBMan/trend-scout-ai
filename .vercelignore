@@ -1,0 +1,24 @@
+# Solana test ledger
+test-ledger/
+
+# Anchor build artifacts
+anchor/target/
+anchor/.anchor/
+
+# Node modules
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment variables
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
