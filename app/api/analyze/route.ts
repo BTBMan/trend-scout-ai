@@ -39,8 +39,20 @@ export async function POST(req: Request) {
     const json = await req.json();
     const { url } = RequestSchema.parse(json);
 
-    // Check for API Key
+    // Check for API Key with detailed logging
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+    // Debug logging (will show in Vercel Function Logs)
+    console.log("🔍 Environment check:", {
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+      allEnvKeys: Object.keys(process.env).filter(
+        (k) => k.includes("GOOGLE") || k.includes("API")
+      ),
+    });
+
     if (!apiKey) {
       console.warn("⚠️ Missing GOOGLE_GENERATIVE_AI_API_KEY. Using Mock Data.");
       // Simulate network delay
