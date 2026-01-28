@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     // Debug logging (will show in Vercel Function Logs)
-    console.log("🔍 Environment check:", {
+    console.warn("🔍 Environment check:", {
       hasApiKey: !!apiKey,
       apiKeyLength: apiKey?.length || 0,
       nodeEnv: process.env.NODE_ENV,
