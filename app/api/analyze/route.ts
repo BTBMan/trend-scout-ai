@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { fetchUrlContent, extractMetadata } from "@/app/lib/fetch-url";
+import { fetchUrlContent } from "@/app/lib/fetch-url";
 
 // Force dynamic execution to skip caching
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ const RequestSchema = z.object({
 
 // Define output structure
 const AnalysisSchema = z.object({
-  score: z.number().min(0).max(100).describe("Viral score from 0 to 100"),
+  score: z.number().min(0).max(100).describe("Fire score from 0 to 100"),
   reasoning: z
     .string()
     .max(200)
@@ -56,21 +56,20 @@ export async function POST(req: Request) {
       console.log(context);
 
       // Call AI with content
-      // const { object } = await generateObject({
-      //   model: google("gemini-2.5-flash"),
-      //   schema: AnalysisSchema,
-      //   system: `你是一个 Degen (激进) 加密投资者。说话简短、犀利、幽默。
-      //   分析给定内容的病毒传播潜力。
-      //   - 如果看起来像骗局 => 低分数, 高风险, 直接说垃圾。
-      //   - 如果有潜力 => 高分数, 警告风险但表现兴奋。
-      //   - 推理必须用简体中文。
-      //   - 推理保持在 200 字符以内。
-      //   - 基于内容的实际信息进行分析,不要编造。`,
-      //   prompt: `分析这个 URL 的内容:\n\nURL: ${url}\n\n${context}`,
-      // });
+      const { object } = await generateObject({
+        model: google("gemini-2.5-flash"),
+        schema: AnalysisSchema,
+        system: `你是一个 Degen (激进) 加密投资者。说话简短、犀利、幽默。
+        分析给定内容的爆火潜力。
+        - 如果看起来像骗局 => 低分数, 高风险, 直接说垃圾。
+        - 如果有潜力 => 高分数, 警告风险但表现兴奋。
+        - 推理必须用简体中文。
+        - 推理保持在 200 字符以内。
+        - 基于内容的实际信息进行分析,不要编造。`,
+        prompt: `分析这个 URL 的内容:\n\nURL: ${url}\n\n${context}`,
+      });
 
-      // return Response.json(object);
-      return Response.json(MOCK_DATA);
+      return Response.json(object);
     } catch (apiError) {
       console.error("AI API Call Failed:", apiError);
       // Fallback to Mock Data on API failure

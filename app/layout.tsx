@@ -7,7 +7,7 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
   title: "TrendScout AI - Alpha 趋势星探",
   description:
-    "利用 AI 快速评估推文/代币的病毒传播潜力，并将发现永久记录在 Solana 链上",
+    "利用 AI 快速评估推文/代币的爆火潜力，并将发现永久记录在 Solana 链上",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",

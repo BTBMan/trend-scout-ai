@@ -41,7 +41,7 @@ export function ResultCard({
   };
 
   const handleShareTwitter = () => {
-    const text = `我在 TrendScout AI 上发现了一个 Alpha！病毒指数：${score}/100 🔥\n\n查看链上证明：`;
+    const text = `我在 TrendScout AI 上发现了一个 Alpha！爆火指数：${score}/100 🔥\n\n查看链上证明：`;
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`https://solscan.io/tx/${txSignature}?cluster=devnet`)}`;
     window.open(twitterUrl, "_blank");
   };
@@ -84,7 +84,7 @@ export function ResultCard({
         </div>
 
         <div className="flex justify-between items-start">
-          <span className="text-sm font-heading text-muted">病毒指数</span>
+          <span className="text-sm font-heading text-muted">爆火指数</span>
           <span className="text-sm font-heading font-bold text-success">
             {score}/100
           </span>
