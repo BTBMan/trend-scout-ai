@@ -53,8 +53,6 @@ export async function POST(req: Request) {
       console.log("📥 Fetching content from:", url);
       const context = await fetchUrlContent(url);
 
-      console.log(context);
-
       // Call AI with content
       const { object } = await generateObject({
         model: google("gemini-2.5-flash"),

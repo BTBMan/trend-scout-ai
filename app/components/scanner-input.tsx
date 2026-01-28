@@ -20,7 +20,7 @@ export function ScannerInput({
   const validateUrl = (input: string): boolean => {
     try {
       const urlObj = new URL(input);
-      const validDomains = ["trends.fun", "twitter.com", "x.com"];
+      const validDomains = ["trends.fun"];
       return validDomains.some((domain) => urlObj.hostname.includes(domain));
     } catch {
       return false;
@@ -37,7 +37,7 @@ export function ScannerInput({
     }
 
     if (!validateUrl(url)) {
-      setError("请输入有效的 Trends.fun 或 Twitter URL");
+      setError("请输入有效的 Trends.fun URL");
       return;
     }
 
@@ -59,7 +59,7 @@ export function ScannerInput({
                   setUrl(e.target.value);
                   setError("");
                 }}
-                placeholder="粘贴 Trends.fun 或 Twitter 链接检测 Alpha..."
+                placeholder="粘贴 Trends.fun 链接检测 Alpha..."
                 disabled={disabled || isAnalyzing}
                 className="flex-1 bg-transparent text-foreground placeholder:text-muted outline-none text-lg font-body disabled:opacity-50"
                 aria-label="URL 输入框"
@@ -93,7 +93,7 @@ export function ScannerInput({
 
       {/* Helper text */}
       <p className="mt-4 text-center text-sm text-muted font-body">
-        支持 Trends.fun 和 Twitter/X 链接
+        支持 Trends.fun 链接
       </p>
     </form>
   );
