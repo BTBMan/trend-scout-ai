@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
+import { fetchUrlContent, extractMetadata } from "@/app/lib/fetch-url";
 
 // Force dynamic execution to skip caching
 export const dynamic = "force-dynamic";
@@ -47,27 +48,34 @@ export async function POST(req: Request) {
       return Response.json(MOCK_DATA);
     }
 
-    return Response.json(MOCK_DATA);
+    try {
+      // Fetch URL content
+      console.log("📥 Fetching content from:", url);
+      const context = await fetchUrlContent(url);
 
-    // try {
-    //   const { object } = await generateObject({
-    //     model: google("gemini-2.5-flash"),
-    //     schema: AnalysisSchema,
-    //     system: `You are a Degen (aggressive) crypto investor. You speak short, sharp, and humorous.
-    //     Analyze the viral potential of the given URL/project.
-    //     - If it looks like a scam => LOW score, HIGH risk, call it garbage.
-    //     - If it has potential => HIGH score, warn about risks but show excitement.
-    //     - Always use Simplified Chinese for reasoning.
-    //     - Keep reasoning under 200 characters.`,
-    //     prompt: `Analyze this URL: ${url}`,
-    //   });
+      console.log(context);
 
-    //   return Response.json(object);
-    // } catch (apiError) {
-    //   console.error("AI API Call Failed:", apiError);
-    //   // Fallback to Mock Data on API failure
-    //   return Response.json(MOCK_DATA);
-    // }
+      // Call AI with content
+      // const { object } = await generateObject({
+      //   model: google("gemini-2.5-flash"),
+      //   schema: AnalysisSchema,
+      //   system: `你是一个 Degen (激进) 加密投资者。说话简短、犀利、幽默。
+      //   分析给定内容的病毒传播潜力。
+      //   - 如果看起来像骗局 => 低分数, 高风险, 直接说垃圾。
+      //   - 如果有潜力 => 高分数, 警告风险但表现兴奋。
+      //   - 推理必须用简体中文。
+      //   - 推理保持在 200 字符以内。
+      //   - 基于内容的实际信息进行分析,不要编造。`,
+      //   prompt: `分析这个 URL 的内容:\n\nURL: ${url}\n\n${context}`,
+      // });
+
+      // return Response.json(object);
+      return Response.json(MOCK_DATA);
+    } catch (apiError) {
+      console.error("AI API Call Failed:", apiError);
+      // Fallback to Mock Data on API failure
+      return Response.json(MOCK_DATA);
+    }
   } catch (error) {
     console.error("Request Error:", error);
     return Response.json(
